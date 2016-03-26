@@ -32,7 +32,6 @@
 *.dSYM/
 
 # autotool
-# # autotoolss
 Makefile
 Makefile.in
 aclocal.m4
