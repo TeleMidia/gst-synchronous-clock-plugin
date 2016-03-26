@@ -64,8 +64,8 @@
 #include <stdio.h>
 #include "gstsynchronousclock.h"
 
-#define LOCK_PRIV(p)    g_mutex_lock(&p->priv->mutex);
-#define UNLOCK_PRIV(p)  g_mutex_unlock(&p->priv->mutex);
+#define LOCK_CLOCK(p)    g_mutex_lock(&p->priv->mutex);
+#define UNLOCK_CLOCK(p)  g_mutex_unlock(&p->priv->mutex);
 
 GST_DEBUG_CATEGORY_STATIC (gst_synchronous_clock_debug);
 #define GST_CAT_DEFAULT gst_synchronous_clock_debug
@@ -84,13 +84,14 @@ struct _GstSynchronousClockPrivate
   GMutex mutex;
 };
 
-G_DEFINE_TYPE (GstSynchronousClock, gst_synchronous_clock, GST_TYPE_SYSTEM_CLOCK);
+G_DEFINE_TYPE (GstSynchronousClock, gst_synchronous_clock,
+    GST_TYPE_SYSTEM_CLOCK)
 
-static void gst_synchronous_clock_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec);
-static void gst_synchronous_clock_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec);
-static GstClockTime synchronous_clock_get_internal_time (GstClock *clock);
+static void gst_synchronous_clock_set_property (GObject *, guint,
+    const GValue *, GParamSpec *);
+static void gst_synchronous_clock_get_property (GObject *, guint,GValue *,
+    GParamSpec *);
+static GstClockTime synchronous_clock_get_internal_time (GstClock *);
 
 /* GObject vmethod implementations */
 
@@ -107,16 +108,6 @@ gst_synchronous_clock_class_init (GstSynchronousClockClass * klass)
   gobject_class->set_property = gst_synchronous_clock_set_property;
   gobject_class->get_property = gst_synchronous_clock_get_property;
 
-  g_object_class_install_property (gobject_class, PROP_SILENT,
-      g_param_spec_boolean ("silent", "Silent", "Produce verbose output ?",
-          FALSE, G_PARAM_READWRITE));
-
-  /* gst_element_class_set_details_simple(clock_class, */
-  /*   "SynchronousClock", */
-  /*   short_description, */
-  /*   "Allows one to deterministically control the pipeline's clock", */
-  /*   "Rodrigo Costa <rodrigocosta@telemidia.puc-rio.br>"); */
-
   clock_class->get_internal_time = synchronous_clock_get_internal_time;
 }
 
@@ -124,7 +115,11 @@ static GstClockTime
 synchronous_clock_get_internal_time (GstClock *clock)
 {
   GstSynchronousClock *myclock = GST_SYNCHRONOUSCLOCK (clock);
-  return myclock->priv->cur_time;
+  GstClockTime time;
+  LOCK_CLOCK (myclock);
+  time = myclock->priv->cur_time;
+  UNLOCK_CLOCK (myclock);
+  return time;
 }
 
 /* initialize the new element
@@ -203,11 +198,11 @@ gst_synchronous_clock_advance_time (GstClock *clock, uint64_t time)
   
   my_clock = GST_SYNCHRONOUSCLOCK (clock);
 
-  LOCK_PRIV (my_clock);
+  LOCK_CLOCK (my_clock);
   my_clock->priv->cur_time += time;
   GST_DEBUG ("%" GST_TIME_FORMAT "\n", 
       GST_TIME_ARGS (my_clock->priv->cur_time));
-  UNLOCK_PRIV (my_clock);
+  UNLOCK_CLOCK (my_clock);
 
   return TRUE;
 }

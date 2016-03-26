@@ -71,7 +71,7 @@ typedef struct _GstSynchronousClockPrivate   GstSynchronousClockPrivate;
 
 struct _GstSynchronousClock
 {
-  GstSystemClock element;
+  GstSystemClock parent;
   GstSynchronousClockPrivate *priv;
 };
 
