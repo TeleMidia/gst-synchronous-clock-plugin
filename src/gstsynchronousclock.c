@@ -92,6 +92,7 @@ static void gst_synchronous_clock_set_property (GObject *, guint,
 static void gst_synchronous_clock_get_property (GObject *, guint,GValue *,
     GParamSpec *);
 static GstClockTime synchronous_clock_get_internal_time (GstClock *);
+static void synchronous_clock_finalize (GObject *);
 
 /* GObject vmethod implementations */
 
@@ -105,6 +106,7 @@ gst_synchronous_clock_class_init (GstSynchronousClockClass * klass)
   gobject_class = (GObjectClass *) klass;
   clock_class = (GstClockClass *) klass;
 
+  gobject_class->finalize = synchronous_clock_finalize;
   gobject_class->set_property = gst_synchronous_clock_set_property;
   gobject_class->get_property = gst_synchronous_clock_get_property;
 
@@ -116,6 +118,7 @@ synchronous_clock_get_internal_time (GstClock *clock)
 {
   GstSynchronousClock *myclock = GST_SYNCHRONOUSCLOCK (clock);
   GstClockTime time;
+ 
   LOCK_CLOCK (myclock);
   time = myclock->priv->cur_time;
   UNLOCK_CLOCK (myclock);
@@ -135,13 +138,22 @@ gst_synchronous_clock_init (GstSynchronousClock * self)
 }
 
 static void
+synchronous_clock_finalize (GObject * object)
+{
+  GstSynchronousClock *self = GST_SYNCHRONOUSCLOCK (object);
+  g_free (self->priv);
+  g_mutex_clear (&self->priv->mutex);
+}
+
+static void
 gst_synchronous_clock_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
   GstSynchronousClock *clock = GST_SYNCHRONOUSCLOCK (object);
   (void) clock;
 
-  switch (prop_id) {
+  switch (prop_id)
+  {
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -155,7 +167,8 @@ gst_synchronous_clock_get_property (GObject * object, guint prop_id,
   GstSynchronousClock *clock = GST_SYNCHRONOUSCLOCK (object);
   (void) clock;
 
-  switch (prop_id) {
+  switch (prop_id)
+  {
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -184,9 +197,7 @@ GstClock *
 gst_synchronous_clock_new ()
 {
   GstClock *ret;
-   
   ret = g_object_new (GST_TYPE_SYNCHRONOUSCLOCK, NULL);
-  
   return ret;
 }
 
@@ -195,9 +206,7 @@ gst_synchronous_clock_advance_time (GstClock *clock, uint64_t time)
 {
   GstSynchronousClock *my_clock;
   g_return_val_if_fail (GST_IS_SYNCHRONOUSCLOCK(clock), FALSE);
-  
   my_clock = GST_SYNCHRONOUSCLOCK (clock);
-
   LOCK_CLOCK (my_clock);
   my_clock->priv->cur_time += time;
   GST_DEBUG ("%" GST_TIME_FORMAT "\n", 

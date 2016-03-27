@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
   GstElement *pipeline;
   GstElement *fakesrc;
   GstElement *fakesink;
-  GstClock *clock;
+  GstClock *clock, *tmpclock;
 
   gst_init (&argc, &argv);
 
@@ -29,20 +29,23 @@ int main(int argc, char *argv[])
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
   gst_synchronous_clock_advance_time (clock, 1000);
-  g_assert (gst_clock_get_time (
-        gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline))) == 1000);
+  tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
+  g_assert (gst_clock_get_time (tmpclock) == 1000);
+  g_object_unref (tmpclock);
   
   gst_synchronous_clock_advance_time (clock, 1000);
-  g_assert (gst_clock_get_time (
-        gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline))) == 2000);
+  tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
+  g_assert (gst_clock_get_time (tmpclock) == 2000);
+  g_object_unref (tmpclock);
   
   g_usleep (1000000);
 
-  g_assert (gst_clock_get_time (
-        gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline))) == 2000);
+  tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
+  g_assert (gst_clock_get_time (tmpclock) == 2000);
+  g_object_unref (tmpclock);
 
   gst_element_set_state (pipeline, GST_STATE_NULL);
   gst_object_unref (pipeline);
-
+  g_object_unref (clock);
   return 0;
 }
