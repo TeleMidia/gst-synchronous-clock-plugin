@@ -138,11 +138,13 @@ gst_synchronous_clock_init (GstSynchronousClock * self)
 }
 
 static void
-synchronous_clock_finalize (GObject * object)
+synchronous_clock_finalize (GObject *object)
 {
   GstSynchronousClock *self = GST_SYNCHRONOUSCLOCK (object);
   g_free (self->priv);
   g_mutex_clear (&self->priv->mutex);
+
+  G_OBJECT_CLASS (gst_synchronous_clock_parent_class)->finalize(object);
 }
 
 static void
