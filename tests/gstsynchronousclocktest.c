@@ -10,16 +10,17 @@
 GstElement *pipeline;
 GstElement *decodebin;
 GstElement *playsink;
+GstElement *alsasink;
 GMainLoop *loop;
 
-guint freq = 50;
+guint freq = 15;
 gint64 t;
 
 gboolean
 timer_cb (gpointer data)
 {
   GstClock *clock = GST_CLOCK (data);
-  gst_synchronous_clock_advance_time (clock, (uint64_t) freq * MS_TO_NS);
+  gst_synchronous_clock_advance_time (clock, (uint64_t)(freq) * MS_TO_NS);
 
   return TRUE;
 }
@@ -66,12 +67,12 @@ cb_pad_added (GstElement *dec,
 
 
 static gboolean 
-bus_cb (GstBus * bus, GstMessage * message, gpointer user_data)
+bus_cb (GstBus *bus, GstMessage *message, gpointer user_data)
 {
-  /* g_print ("Got %s message\n", GST_MESSAGE_TYPE_NAME (message)); */
-
-  switch (GST_MESSAGE_TYPE (message)) {
-    case GST_MESSAGE_ERROR: {
+  switch (GST_MESSAGE_TYPE (message))
+  {
+    case GST_MESSAGE_ERROR: 
+    {
       GError *err;
       gchar *debug;
 
@@ -84,9 +85,11 @@ bus_cb (GstBus * bus, GstMessage * message, gpointer user_data)
       break;
     }
     case GST_MESSAGE_EOS:
+    {
       /* end-of-stream */
       g_main_loop_quit (loop);
       break;
+    }
     default:
       /* unhandled message */
       break;
@@ -99,8 +102,7 @@ int
 main(int argc, char *argv[])
 {
   GstBus *bus;
-  GstClock *clock;
-  GstElement *alsasink;
+  GstClock *clock, *audioclock;
 
   if (argc < 2)
   {
@@ -127,8 +129,9 @@ main(int argc, char *argv[])
 
   g_object_set (G_OBJECT (decodebin), "uri", argv[1], NULL);
   g_object_set (G_OBJECT (playsink), "audio-sink", alsasink, NULL);
-  g_object_set (G_OBJECT (alsasink), "slave-method", 
-      GST_AUDIO_BASE_SINK_SLAVE_SKEW, NULL);
+  
+  GST_OBJECT_FLAG_SET (G_OBJECT(alsasink), GST_CLOCK_FLAG_CAN_SET_MASTER);
+
   gst_bin_add_many (GST_BIN (pipeline), decodebin, playsink, NULL);
   
   g_signal_connect (decodebin, "pad-added", G_CALLBACK (cb_pad_added), NULL);
@@ -137,6 +140,14 @@ main(int argc, char *argv[])
 
   gst_pipeline_use_clock (GST_PIPELINE(pipeline), clock);
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
+  gst_element_get_state (pipeline, NULL, NULL, GST_CLOCK_TIME_NONE);
+
+  /* Setting 'clock' as master of 'audioclock' */
+  audioclock = GST_AUDIO_BASE_SINK (alsasink)->provided_clock;
+  if (!gst_clock_set_master (audioclock, clock))
+    printf ("Could not slave audioclock (%p) to clock (%p)\n", 
+        (void *) audioclock, (void *) clock);
+
   t = g_get_monotonic_time ();
   g_timeout_add (freq, timer_cb, clock);
   g_main_loop_run (loop);
@@ -144,9 +155,9 @@ main(int argc, char *argv[])
   if (GST_STATE (pipeline) != GST_STATE_NULL)
     gst_element_set_state (pipeline, GST_STATE_NULL);
 
+  g_object_unref (clock);
   g_main_loop_unref (loop);
   gst_object_unref (pipeline);
-  g_object_unref (clock);
   
   return EXIT_SUCCESS;
 }
