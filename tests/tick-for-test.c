@@ -1,7 +1,6 @@
 #include <gst/gst.h>
 #include <gstsynchronousclock.h>
 
-#define SLEEP 2000000
 
 int main(int argc, char *argv[])
 {
@@ -28,20 +27,20 @@ int main(int argc, char *argv[])
 
   gst_element_set_state (pipeline, GST_STATE_PLAYING);
 
-  gst_synchronous_clock_tick_for (clock, 1000);
+  gst_synchronous_clock_tick_for (clock, GST_SECOND, NULL);
   tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
-  g_assert (gst_clock_get_time (tmpclock) == 1000);
+  g_assert (gst_clock_get_time (tmpclock) == GST_SECOND);
   g_object_unref (tmpclock);
   
-  gst_synchronous_clock_tick_for (clock, 1000);
+  gst_synchronous_clock_tick_for (clock, GST_SECOND, NULL);
   tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
-  g_assert (gst_clock_get_time (tmpclock) == 2000);
+  g_assert (gst_clock_get_time (tmpclock) == 2 * GST_SECOND);
   g_object_unref (tmpclock);
   
   g_usleep (1000000);
 
   tmpclock = gst_pipeline_get_pipeline_clock(GST_PIPELINE (pipeline));
-  g_assert (gst_clock_get_time (tmpclock) == 2000);
+  g_assert (gst_clock_get_time (tmpclock) == 2 * GST_SECOND);
   g_object_unref (tmpclock);
 
   gst_element_set_state (pipeline, GST_STATE_NULL);
