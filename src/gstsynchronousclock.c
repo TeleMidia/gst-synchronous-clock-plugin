@@ -68,6 +68,8 @@
 #define LOCK_CLOCK(p)    g_mutex_lock(&p->priv->mutex);
 #define UNLOCK_CLOCK(p)  g_mutex_unlock(&p->priv->mutex);
 
+#define DEFAULT_TICK 32 * 1000000 /*ns*/
+
 GST_DEBUG_CATEGORY_STATIC (gst_synchronous_clock_debug);
 #define GST_CAT_DEFAULT gst_synchronous_clock_debug
 
@@ -75,13 +77,14 @@ static const char *short_description = "A deterministic clock";
 
 enum
 {
-  PROP_STEP = 1,
+  PROP_TICK = 1,
 };
 
 struct _GstSynchronousClockPrivate 
 {
   uint64_t cur_time;
   GMutex mutex;
+  GstClock *internal_clock;
 };
 
 G_DEFINE_TYPE (GstSynchronousClock, gst_synchronous_clock,
@@ -112,10 +115,10 @@ gst_synchronous_clock_class_init (GstSynchronousClockClass * klass)
 
   clock_class->get_internal_time = synchronous_clock_get_internal_time;
   
-  g_object_class_install_property (gobject_class, PROP_STEP,
-      g_param_spec_uint64 ("step", "Step", "Ammount of time used in each "
-        "step within the function gst_synchronous_clock_advance_time_for",
-          1, G_MAXUINT64, 100,G_PARAM_READWRITE));
+  g_object_class_install_property (gobject_class, PROP_TICK,
+      g_param_spec_uint64 ("tick", "Tick", "Ammount of time used in each "
+        "tick within the function gst_synchronous_clock_tick_for",
+          1, G_MAXUINT64, DEFAULT_TICK, G_PARAM_READWRITE));
 }
 
 static GstClockTime 
@@ -138,9 +141,12 @@ synchronous_clock_get_internal_time (GstClock *clock)
 static void
 gst_synchronous_clock_init (GstSynchronousClock * self)
 {
+  self->tick = DEFAULT_TICK;
   self->priv = g_new0 (GstSynchronousClockPrivate, 1);
   g_mutex_init (&self->priv->mutex);
+  self->priv->internal_clock = gst_system_clock_obtain ();
 }
+
 
 static void
 synchronous_clock_finalize (GObject *object)
@@ -148,6 +154,7 @@ synchronous_clock_finalize (GObject *object)
   GstSynchronousClock *self = GST_SYNCHRONOUSCLOCK (object);
   g_free (self->priv);
   g_mutex_clear (&self->priv->mutex);
+  g_object_unref (self->priv->internal_clock);
 
   G_OBJECT_CLASS (gst_synchronous_clock_parent_class)->finalize(object);
 }
@@ -160,9 +167,9 @@ gst_synchronous_clock_set_property (GObject *object, guint prop_id,
 
   switch (prop_id)
   {
-    case PROP_STEP:
+    case PROP_TICK:
     {
-      clock->step = g_value_get_uint64 (value);
+      clock->tick = g_value_get_uint64 (value);
     }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -178,9 +185,9 @@ gst_synchronous_clock_get_property (GObject * object, guint prop_id,
 
   switch (prop_id)
   {
-    case PROP_STEP:
+    case PROP_TICK:
     {
-      g_value_set_uint64 (value, clock->step);
+      g_value_set_uint64 (value, clock->tick);
     }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -230,7 +237,8 @@ gst_synchronous_clock_advance_time (GstClock *clock, uint64_t time)
 }
       
 void
-gst_synchronous_clock_tick_for (GstClock *clock, uint64_t amount)
+gst_synchronous_clock_tick_for (GstClock *clock, uint64_t amount, 
+    GCancellable *cancellable)
 {
   GstSynchronousClock *my_clock;
   if (GST_IS_SYNCHRONOUSCLOCK(clock) == FALSE)
@@ -240,14 +248,22 @@ gst_synchronous_clock_tick_for (GstClock *clock, uint64_t amount)
 
   while (amount > 0)
   {
-    struct timespec awake;
+    GstClockID clock_id;
     uint64_t time;
-    time = amount < my_clock->step ? amount : my_clock->step;
-    gst_synchronous_clock_advance_time (clock, time);
+    if (g_cancellable_is_cancelled(cancellable))
+      break;
+
+    time = amount < my_clock->tick ? amount : my_clock->tick;
     amount -= time;
-    awake.tv_sec = 0;
-    awake.tv_nsec = time;
-    clock_nanosleep (CLOCK_REALTIME, 0, &awake, NULL);
+    gst_synchronous_clock_advance_time (clock, time);
+    clock_id = gst_clock_new_single_shot_id (
+        my_clock->priv->internal_clock, 
+        gst_clock_get_time(my_clock->priv->internal_clock) + time);
+
+    /* let's sleep for 'time' ns  */
+    gst_clock_id_wait (clock_id, NULL);
+
+    gst_clock_id_unref (clock_id);
   }
 }
 

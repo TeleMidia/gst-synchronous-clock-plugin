@@ -47,6 +47,7 @@
 #define __GST_SYNCHRONOUSCLOCK_H__
 
 #include <gst/gst.h>
+#include <gio/gio.h>
 #include <inttypes.h>
 
 G_BEGIN_DECLS
@@ -74,7 +75,7 @@ struct _GstSynchronousClock
   GstSystemClock parent;
   GstSynchronousClockPrivate *priv;
 
-  uint64_t step;
+  uint64_t tick;
 };
 
 struct _GstSynchronousClockClass 
@@ -92,7 +93,7 @@ gboolean
 gst_synchronous_clock_advance_time (GstClock *,  uint64_t);
 
 void
-gst_synchronous_clock_tick_for (GstClock *, uint64_t);
+gst_synchronous_clock_tick_for (GstClock *, uint64_t, GCancellable *);
 
 G_END_DECLS
 

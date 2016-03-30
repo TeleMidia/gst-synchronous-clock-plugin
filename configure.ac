@@ -1,15 +1,17 @@
 dnl required version of autoconf
 AC_PREREQ([2.53])
 
-dnl TODO: fill in your package name and package version here
-AC_INIT([my-plugin-package],[1.0.0])
+AC_INIT([gst-synchronous-clock-package],[1.0.0])
 
 dnl required versions of gstreamer and plugins-base
 GST_REQUIRED=1.0.0
 GSTPB_REQUIRED=1.0.0
 
-AC_CONFIG_SRCDIR([src/gstsynchronousclock.c])
-AC_CONFIG_SRCDIR([tests/gstsynchronousclocktest.c])
+dnl gio version
+GIO_REQUIRED=2.0
+
+AC_CONFIG_SRCDIR([src/])
+AC_CONFIG_SRCDIR([tests/])
 AC_CONFIG_HEADERS([config.h])
 
 dnl required version of automake
@@ -58,6 +60,18 @@ PKG_CHECK_MODULES(GST, [
       libgstreamer1.0-dev and libgstreamer-plugins-base1.0-dev.
       on RPM-based systems gstreamer1.0-devel, libgstreamer1.0-devel
       or similar. The minimum version required is $GST_REQUIRED.
+  ])
+])
+
+PKG_CHECK_MODULES(GIO, [
+  gio-2.0 >= $GIO_REQUIRED
+], [
+  AC_SUBST(GIO_CFLAGS)
+  AC_SUBST(GIO_LIBS)
+], [
+  AC_MSG_ERROR([
+      You need to install or upgrade the GIO development
+      packages on your system. The minimum version required is $GIO_REQUIRED.
   ])
 ])
 
