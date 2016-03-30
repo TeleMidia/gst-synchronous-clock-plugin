@@ -1,4 +1,6 @@
-check_PROGRAMS = gstsynchronousclocktest advancetimetest
+check_PROGRAMS = gstsynchronousclocktest\
+								 advancetimetest				\
+								 tickfortest
 
 AM_CFLAGS = --pedantic -Wall -Werror -std=c99 -Og -I$(top_srcdir)/src \
 				 $(GST_CFLAGS)
@@ -12,8 +14,13 @@ advancetimetest_SOURCES = advance-time-test.c
 advancetimetest_CFLAGS = $(AM_CFLAGS)
 advancetimetest_LDFLAGS = $(AM_LDFLAGS)
 
+tickfortest_SOURCES = tick-for-test.c
+tickfortest_CFLAGS = $(AM_CFLAGS)
+tickfortest_LDFLAGS = $(AM_LDFLAGS)
+
 TESTS = advancetimetest
+TESTS += tickfortest
 
-noinst_PROGRAMS = gstsynchronousclocktest advancetimetest
-
-
+noinst_PROGRAMS = gstsynchronousclocktest	\
+									advancetimetest					\
+									tickfortest
