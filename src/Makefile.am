@@ -17,7 +17,7 @@ plugin_LTLIBRARIES = libgstsynchronousclock.la
 libgstsynchronousclock_la_SOURCES = gstsynchronousclock.c gstsynchronousclock.h
 
 # compiler and linker flags used to compile this plugin, set in configure.ac
-libgstsynchronousclock_la_CFLAGS = $(GST_CFLAGS) -Werror -Wall -std=c99 -pedantic
+libgstsynchronousclock_la_CFLAGS = $(GST_CFLAGS) -Werror -Wall -std=gnu99 -pedantic
 libgstsynchronousclock_la_LIBADD = $(GST_LIBS)
 libgstsynchronousclock_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 libgstsynchronousclock_la_LIBTOOLFLAGS = --tag=disable-static

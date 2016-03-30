@@ -73,6 +73,8 @@ struct _GstSynchronousClock
 {
   GstSystemClock parent;
   GstSynchronousClockPrivate *priv;
+
+  uint64_t step;
 };
 
 struct _GstSynchronousClockClass 
@@ -87,7 +89,10 @@ GstClock *
 gst_synchronous_clock_new ();
 
 gboolean
-gst_synchronous_clock_advance_time (GstClock *clock,  uint64_t);
+gst_synchronous_clock_advance_time (GstClock *,  uint64_t);
+
+void
+gst_synchronous_clock_tick_for (GstClock *, uint64_t);
 
 G_END_DECLS
 

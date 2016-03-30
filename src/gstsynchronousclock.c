@@ -61,6 +61,7 @@
 #endif
 
 #include <gst/gst.h>
+#include <time.h>
 #include <stdio.h>
 #include "gstsynchronousclock.h"
 
@@ -74,8 +75,7 @@ static const char *short_description = "A deterministic clock";
 
 enum
 {
-  PROP_0,
-  PROP_SILENT
+  PROP_STEP = 1,
 };
 
 struct _GstSynchronousClockPrivate 
@@ -111,6 +111,11 @@ gst_synchronous_clock_class_init (GstSynchronousClockClass * klass)
   gobject_class->get_property = gst_synchronous_clock_get_property;
 
   clock_class->get_internal_time = synchronous_clock_get_internal_time;
+  
+  g_object_class_install_property (gobject_class, PROP_STEP,
+      g_param_spec_uint64 ("step", "Step", "Ammount of time used in each "
+        "step within the function gst_synchronous_clock_advance_time_for",
+          1, G_MAXUINT64, 100,G_PARAM_READWRITE));
 }
 
 static GstClockTime 
@@ -148,14 +153,17 @@ synchronous_clock_finalize (GObject *object)
 }
 
 static void
-gst_synchronous_clock_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec)
+gst_synchronous_clock_set_property (GObject *object, guint prop_id,
+    const GValue *value, GParamSpec *pspec)
 {
   GstSynchronousClock *clock = GST_SYNCHRONOUSCLOCK (object);
-  (void) clock;
 
   switch (prop_id)
   {
+    case PROP_STEP:
+    {
+      clock->step = g_value_get_uint64 (value);
+    }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -164,13 +172,16 @@ gst_synchronous_clock_set_property (GObject * object, guint prop_id,
 
 static void
 gst_synchronous_clock_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec)
+    GValue *value, GParamSpec *pspec)
 {
   GstSynchronousClock *clock = GST_SYNCHRONOUSCLOCK (object);
-  (void) clock;
 
   switch (prop_id)
   {
+    case PROP_STEP:
+    {
+      g_value_set_uint64 (value, clock->step);
+    }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -216,6 +227,28 @@ gst_synchronous_clock_advance_time (GstClock *clock, uint64_t time)
   UNLOCK_CLOCK (my_clock);
 
   return TRUE;
+}
+      
+void
+gst_synchronous_clock_tick_for (GstClock *clock, uint64_t amount)
+{
+  GstSynchronousClock *my_clock;
+  if (GST_IS_SYNCHRONOUSCLOCK(clock) == FALSE)
+    return;
+
+  my_clock = GST_SYNCHRONOUSCLOCK(clock);
+
+  while (amount > 0)
+  {
+    struct timespec awake;
+    uint64_t time;
+    time = amount < my_clock->step ? amount : my_clock->step;
+    gst_synchronous_clock_advance_time (clock, time);
+    amount -= time;
+    awake.tv_sec = 0;
+    awake.tv_nsec = time;
+    clock_nanosleep (CLOCK_REALTIME, 0, &awake, NULL);
+  }
 }
 
 /* PACKAGE: this is usually set by autotools depending on some _INIT macro
