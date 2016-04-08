@@ -98,6 +98,11 @@ dnl set proper LDFLAGS for plugins
 GST_PLUGIN_LDFLAGS='-avoid-version -export-symbols-regex [_]*\(gst_\|Gst\|GST_\).*'
 AC_SUBST(GST_PLUGIN_LDFLAGS)
 
-AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
+AC_CONFIG_FILES([
+Makefile 
+src/Makefile 
+src/gstsynchronousclock.pc
+tests/Makefile
+])
 AC_OUTPUT
 

@@ -24,3 +24,5 @@ libgstsynchronousclock_la_LIBTOOLFLAGS = --tag=disable-static
 
 include_HEADERS = gstsynchronousclock.h
 
+pkgconfigdir=$(libdir)/pkgconfig
+pkgconfig_DATA= gstsynchronousclock.pc
