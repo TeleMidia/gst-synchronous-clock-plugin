@@ -9,5 +9,5 @@ Description: Simple Deterministic GstClock
 Version: @VERSION@                                                              
                                                                                 
 Cflags : -I${includedir}
+Requires: gstreamer-1.0 gio-2.0
 Libs: -L${libdir} -lgstsynchronousclock                                                        
-Libs.private: @GLIB_LIBS@ @GSTREAMER_LIBS@ 
