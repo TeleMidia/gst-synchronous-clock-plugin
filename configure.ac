@@ -1,7 +1,11 @@
 dnl required version of autoconf
 AC_PREREQ([2.53])
 
-AC_INIT([gst-synchronous-clock-package],[1.0.0])
+AC_INIT([GstSynchronousClock],
+        [1.0.0],
+        [rodrigocosta@telemidia.puc-rio.br],
+        [gst-synchronous-clock-package],
+        [https://github.com/TeleMidia/gst-synchronous-clock-plugin])
 
 dnl required versions of gstreamer and plugins-base
 GST_REQUIRED=1.0.0

@@ -1,13 +1,13 @@
-# @configure_input@                                                             
-prefix=@prefix@                                                                 
-exec_prefix=@exec_prefix@                                                       
-libdir=@libdir@                                                                 
-includedir=@includedir@                                                         
-                                                                                
-Name: GstSynchronousClock                                                                   
-Description: Simple Deterministic GstClock                                          
-Version: @VERSION@                                                              
-                                                                                
+# @configure_input@                        
+prefix=@prefix@                            
+exec_prefix=@exec_prefix@                  
+libdir=@libdir@                            
+includedir=@includedir@                    
+                                           
+Name: GstSynchronousClock                  
+Description: Simple Deterministic GstClock 
+Version: @VERSION@ 
+                                           
 Cflags : -I${includedir}
 Requires: gstreamer-1.0 gio-2.0
-Libs: -L${libdir} -lgstsynchronousclock                                                        
+Libs: -L${libdir} -lgstsynchronousclock    
